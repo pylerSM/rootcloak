@@ -52,7 +52,8 @@ int fname_is_blacklisted (const char *fname) {
 
 int str_is_blacklisted (const char *needle) {
     if (rootcloak_strcasecmp("su", needle) == 0 || rootcloak_strcasestr(needle, "supersu") != NULL ||
-            rootcloak_strcasestr(needle, "rootkeeper") != NULL || rootcloak_strcasestr(needle, "hidemyroot") != NULL) {
+        rootcloak_strcasestr(needle, "rootkeeper") != NULL || rootcloak_strcasestr(needle, "hidemyroot") != NULL ||
+        rootcloak_strcasestr(needle, "rootcloak") != NULL) {
         return 1;
     }
     return 0;
@@ -299,4 +300,26 @@ int strcasecmp(const char *s1, const char *s2) {
         original_strcasecmp = dlsym(RTLD_NEXT, "strcasecmp");
     }
     return original_strcasecmp(s1, s2);
+}
+
+FILE *popen(const char *command, const char *type) {
+    if (DEBUG_LOGS) {
+        printf("In our own popen, command %s\n", command);
+        __android_log_print(ANDROID_LOG_INFO, "ROOTCLOAK", "popen(): command %s", command);
+    }
+
+    char* su = "su";
+    if (strncasecmp(command, su, strlen(su)) == 0) {
+        if (DEBUG_LOGS) {
+            __android_log_print(ANDROID_LOG_INFO, "ROOTCLOAK", "popen(): Hiding su %s", command);
+        }
+        return NULL;
+    }
+
+    static FILE*(*original_popen)(const char*, const char*) = NULL;
+    if (!original_popen) {
+        original_popen = dlsym(RTLD_NEXT, "popen");
+    }
+
+    return original_popen(command, type);
 }
